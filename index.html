@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta de Documentos por CNPJ</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f9f9f9; }
+    .container { max-width: 600px; margin-top: 100px; }
+    .card { box-shadow: 0 0 15px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title text-center mb-4">Consulta de Documentos</h5>
+        <form id="cnpj-form">
+          <div class="mb-3">
+            <label for="cnpj" class="form-label">Digite seu CNPJ:</label>
+            <input type="text" class="form-control" id="cnpj" required />
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary">Consultar</button>
+          </div>
+        </form>
+        <div id="resultado" class="mt-4" style="display: none;">
+          <h6>Dados da Empresa:</h6>
+          <p><strong>Nome:</strong> <span id="nomeEmpresa"></span></p>
+          <p><strong>Situação:</strong> <span id="situacao"></span></p>
+          <h6>Documentos Disponíveis:</h6>
+          <ul id="listaDocumentos"></ul>
+        </div>
+        <div id="erro" class="alert alert-danger mt-4" style="display: none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('cnpj-form');
+    const resultado = document.getElementById('resultado');
+    const erro = document.getElementById('erro');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultado.style.display = 'none';
+      erro.style.display = 'none';
+
+      const cnpj = document.getElementById('cnpj').value.replace(/\D/g, '');
+      if (cnpj.length !== 14) {
+        erro.textContent = 'CNPJ inválido.';
+        erro.style.display = 'block';
+        return;
+      }
+
+      try {
+        const dados = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cnpj}`).then(res => res.json());
+
+        if (dados.status === 'ERROR') {
+          erro.textContent = dados.message;
+          erro.style.display = 'block';
+          return;
+        }
+
+        document.getElementById('nomeEmpresa').textContent = dados.nome;
+        document.getElementById('situacao').textContent = dados.situacao;
+        resultado.style.display = 'block';
+
+        const codigoCliente = cnpj.substring(0, 4);
+
+        const documentos = await fetch(`https://seudominio.com/docs/${codigoCliente}/index.json`).then(res => res.json());
+
+        const lista = document.getElementById('listaDocumentos');
+        lista.innerHTML = '';
+        documentos.forEach(doc => {
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="https://seudominio.com/docs/${codigoCliente}/${doc}" target="_blank">📄 ${doc}</a>`;
+          lista.appendChild(li);
+        });
+      } catch (e) {
+        erro.textContent = 'Erro ao consultar CNPJ ou buscar documentos.';
+        erro.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
